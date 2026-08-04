@@ -1,4 +1,3 @@
-# Aira Agent WebPortal
 
 基于 **DeepSeek LLM** 的企业智能体问答服务。将企业文档（PDF / DOCX / XLSX / PPTX 等）自动转化为结构化 Wiki 知识库，提供流式对话问答、知识图谱构建与巡检能力。
 
@@ -431,27 +430,8 @@ APP_ENV=test python utils/addComDocFromMQ.py --once
 `Dockerfile` 中已配置阿里云镜像源加速安装。
 
 ---
+<img width="1203" height="1683" alt="82438833dd466ac95b2fd4a2f74f59d5" src="https://github.com/user-attachments/assets/53511db0-c52a-4382-a167-a4601da76114" />
 
-## 两个 LLM 底座
 
-项目提供两套 LLM 调用底座，按需选用：
 
-| 模块 | API 来源 | 默认模型 | 适用场景 |
-|------|----------|----------|----------|
-| `baseAtoml/llmdeepseek.py` | DeepSeek 官方 | `deepseek-chat` / `deepseek-reasoner` | 问答、Wiki 生成、流式输出 |
-| `baseAtoml/llmbase.py` | 360 代理 | `deepseek/deepseek-v4-pro` | 图谱语义推断、巡检 |
 
-接口一致：`call_llm(prompt, ...)` 和 `call_llm_stream(prompt, ...)`，切换时只需改 import。
-
----
-
-## 相关项目
-
-`thirdPart/` 目录包含上游参考实现（[llm-wiki](https://github.com/anthropics/llm-wiki) 风格框架），本项目在此基础上增加了：
-
-- 多企业隔离的 Wiki 目录结构（`maindir/<companyId>/`）
-- RabbitMQ 异步文档处理管道
-- MySQL 对话历史持久化
-- 多策略文档解析降级链
-- Kubernetes 部署支持
-- 智能体信息管理 API
