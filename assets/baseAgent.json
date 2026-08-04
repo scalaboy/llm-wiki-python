@@ -1,0 +1,25 @@
+{
+"total": 1,
+"rows": [
+{
+"agentName": "河南中盛金属材料有限公司采销员.万贸达.企业智联.中国",
+"agentDescription": "面向钢材贸易企业的采销业务场景，支持螺纹钢、热卷等品类的价格查询、采购需求匹配、销售线索整理和供应商协同。 ",
+"agentPlatform": "万贸达",
+"agentTags": [
+"钢材贸易",
+"采销协同","价格查询",
+"供应链"
+],
+"agentType": "05",
+"agentVersion": "v1.1.0",
+"accessInterface": [
+"p=ANP;v=v1.0;url=https://steel-trade.wanmaoda.e-agent.cn/anp.json"
+],
+"enterpriseName": "河南中盛金属材料有限公司",
+"enterpriseScale": "01",
+"location": "310000"
+}
+],
+"code": 200,
+"msg": " 查询成功"
+}

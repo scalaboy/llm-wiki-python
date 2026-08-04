@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 敏感配置（含 API 密钥）
+env/
+
+# 运行时数据
+maindir/
+graph/graph.html
+graph/graph.json
+
+# 用户文档
+raw/
+
+# 日志
+*.log
+
+# 临时文件
+*_debug.txt
+.ingest_manifest.json

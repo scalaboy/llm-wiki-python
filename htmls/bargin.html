@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>万联智链 · 谈判终端</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+/* ========== 基础重置 & 变量 ========== */
+:root{
+  --phone-w:400px;
+  --phone-h:760px;
+  --phone-radius:40px;
+  --gap:40px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#f5f3ee;
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  overflow-x:hidden;overflow-y:auto;
+}
+
+/* ========== 左侧品牌区 ========== */
+#hero{
+  flex:1 1 auto;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  padding:0 60px;min-width:200px;max-width:480px;
+}
+#hero h1{
+  font-size:clamp(28px,5vw,44px);font-weight:800;color:#1a1a2e;
+  letter-spacing:-1px;margin-bottom:6px;
+}
+#hero h1 span{color:#e94560}
+#hero .sub{
+  font-size:clamp(11px,1.5vw,14px);color:#888;letter-spacing:2px;margin-bottom:24px;
+}
+#hero .pil{display:flex;gap:10px;flex-wrap:wrap}
+#hero .pil span{
+  font-size:11px;color:#555;
+  background:#fff;border:1px solid #e0dcd5;
+  border-radius:20px;padding:5px 14px;
+}
+#hero .dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#4caf50;margin-right:5px;
+}
+
+/* ========== 手机框 ========== */
+#phone-wrap{position:relative;margin-right:var(--gap);flex-shrink:0}
+#phone{
+  width:var(--phone-w);height:var(--phone-h);
+  max-width:min(400px, calc(100vw - 310px));
+  max-height:min(760px, calc(100vh - 40px), calc(100dvh - 40px));
+  background:#fff;
+  border-radius:var(--phone-radius);
+  border:3px solid #2d2d3f;
+  box-shadow:0 20px 60px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.06);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#phone::before{
+  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:130px;height:26px;background:#2d2d3f;
+  border-radius:0 0 16px 16px;z-index:10;
+}
+
+/* ========== 状态栏 ========== */
+#topbar{
+  padding:34px 20px 6px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:#aaa;
+  border-bottom:1px solid #f0ece6;
+}
+#topbar .company{font-weight:700;color:#2d2d3f;font-size:12px}
+
+/* ========== 聊天区 ========== */
+#chat{
+  flex:1;overflow-y:auto;padding:14px 18px;
+  display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;background:#fafaf8;
+  -webkit-overflow-scrolling:touch;
+}
+#chat::-webkit-scrollbar{width:4px}
+#chat::-webkit-scrollbar-track{background:transparent}
+#chat::-webkit-scrollbar-thumb{background:#e0dcd5;border-radius:3px}
+
+.msg{max-width:85%;padding:10px 14px;font-size:13px;line-height:1.7;animation:fadeUp .25s ease;word-break:break-word}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.msg.buyer{
+  align-self:flex-end;
+  background:#e8f0fe;color:#1a2a3a;
+  border-radius:16px 16px 4px 16px;
+}
+.msg.seller{
+  align-self:flex-start;
+  background:#fff;color:#2d2d3f;
+  border-radius:16px 16px 16px 4px;
+  border:1px solid #ece8e0;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.msg .label{
+  font-size:10px;opacity:.45;margin-bottom:3px;letter-spacing:1px;
+  font-weight:600;
+}
+.msg.buyer .label{color:#4a90d9}
+.msg.seller .label{color:#888}
+
+/* seller 消息 markdown */
+.msg.seller h1,.msg.seller h2,.msg.seller h3{font-size:13px;font-weight:700;margin:4px 0 2px;color:#1a1a2e}
+.msg.seller strong{color:#c0392b;font-weight:600}
+.msg.seller table{width:100%;border-collapse:collapse;font-size:11px;margin:4px 0}
+.msg.seller td,.msg.seller th{border:1px solid #e8e4dc;padding:3px 6px;text-align:left}
+.msg.seller th{background:#f5f3ee;font-weight:600}
+.msg.seller ul,.msg.seller ol{padding-left:16px;margin:2px 0}
+.msg.seller code{background:#f5f3ee;padding:1px 4px;border-radius:3px;font-size:11px}
+.msg.seller hr{border:none;border-top:1px solid #e8e4dc;margin:6px 0}
+
+/* 加载中 */
+.msg.loading{
+  align-self:flex-start;opacity:.6;
+  font-size:12px;color:#aaa;font-style:italic;
+  padding:8px 14px;
+}
+
+/* ========== 输入区 ========== */
+#input-area{
+  padding:10px 14px 16px;display:flex;gap:8px;
+  border-top:1px solid #f0ece6;background:#fff;
+}
+#input-area textarea{
+  flex:1;height:44px;max-height:90px;
+  background:#f5f3ee;border:1px solid #e0dcd5;
+  border-radius:22px;color:#2d2d3f;font-size:13px;
+  padding:11px 18px;resize:none;outline:none;
+  font-family:inherit;transition:border .3s;
+}
+#input-area textarea:focus{border-color:#c0b8a8}
+#input-area button{
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:#2d2d3f;color:#fff;font-size:18px;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+}
+#input-area button:hover{background:#e94560;transform:scale(1.05)}
+#input-area button:disabled{opacity:.3;cursor:not-allowed;transform:none}
+#input-area button::before{content:"↑"}
+
+/* ================================================
+   响应式断点
+   ================================================ */
+
+/* 中等屏幕（平板横屏 / 小笔记本）：缩小间距和手机框 */
+@media (max-width:1100px){
+  :root{--gap:20px}
+  #hero{padding:0 30px}
+  #phone{
+    --phone-w:360px;
+    --phone-h:680px;
+  }
+}
+
+/* 窄屏（平板竖屏）：品牌区收窄，上下布局 */
+@media (max-width:850px){
+  body{flex-direction:column;justify-content:flex-start;padding:20px 0 0}
+  #hero{
+    flex:0 0 auto;align-items:center;text-align:center;
+    padding:0 20px 16px;max-width:100%;min-width:0;
+  }
+  #hero .pil{justify-content:center}
+  #phone-wrap{margin-right:0;margin-bottom:20px}
+  #phone{
+    --phone-w:min(400px, calc(100vw - 24px));
+    --phone-h:min(700px, calc(100vh - 170px), calc(100dvh - 170px));
+    border-radius:24px;
+  }
+  #phone::before{display:none}
+  #topbar{padding-top:16px}
+}
+
+/* 手机竖屏：全屏模式 */
+@media (max-width:500px){
+  body{padding:0;background:#fff}
+  #hero{display:none}
+  #phone-wrap{margin:0}
+  #phone{
+    --phone-w:100vw;
+    --phone-h:100vh;--phone-h:100dvh;
+    border-radius:0;border:none;box-shadow:none;
+    max-width:100vw;max-height:100vh;max-height:100dvh;
+  }
+  #topbar{padding:env(safe-area-inset-top) 16px 6px}
+  #input-area{padding-bottom:max(16px, env(safe-area-inset-bottom))}
+  #chat{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<div id="hero">
+  <h1>α<span>·</span>DEAL</h1>
+  <div class="sub">万联智链 · 智能卖方谈判终端</div>
+  <div class="pil">
+    <span><span class="dot"></span>服务在线</span>
+    <span>deepseek-v4-flash</span>
+    <span>钢联数据已同步</span>
+  </div>
+</div>
+
+<div id="phone-wrap">
+  <div id="phone">
+    <div id="topbar">
+      <span>α·DEAL</span>
+      <span class="company">中新钢铁</span>
+    </div>
+    <div id="chat"></div>
+    <div id="input-area">
+      <textarea id="msg" placeholder="输入买方消息..." rows="1"></textarea>
+      <button id="send" onclick="send()"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API="http://192.168.35.197:32145/chat";
+let round=0;
+const chat=document.getElementById("chat");
+const input=document.getElementById("msg");
+const btn=document.getElementById("send");
+
+function append(role,text,isHtml){
+  let cls=role==="buyer"?"buyer":"seller";
+  let label=role==="buyer"?"🛒 买方":"🤖 万联Agent";
+  let div=document.createElement("div");
+  div.className="msg "+cls;
+  div.innerHTML=`<div class="label">${label}</div>${isHtml?text:escapeHtml(text)}`;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+  return div;
+}
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+function showLoading(){
+  let div=document.createElement("div");
+  div.className="msg loading";
+  div.id="loading-msg";
+  div.innerHTML="🤖 万联Agent 思考中<span class='dots'></span>";
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+  let dots=div.querySelector(".dots");
+  let n=0;div._timer=setInterval(()=>{n=(n+1)%4;dots.textContent=".".repeat(n)},400);
+  return div;
+}
+function hideLoading(div){
+  clearInterval(div._timer);
+  div.remove();
+}
+
+async function send(){
+  const m=input.value.trim();if(!m)return;
+  btn.disabled=true;round++;
+  append("buyer",m);
+  input.value="";
+  let loading=showLoading();
+  try{
+    const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m})});
+    const d=await r.json();
+    hideLoading(loading);
+    let reply=d.reply||"";
+    let html=marked.parse(reply);
+    if(d.earn){
+      let e=d.earn;
+      html+=`<hr><small style="opacity:.5">💰 ${e.deal_price}元/吨 · 收益${e.money}元 · 利润率${(e.ratio*100).toFixed(2)}%</small>`;
+    }
+    append("seller",html,true);
+  }catch(e){
+    hideLoading(loading);
+    append("seller","❌ 连接失败："+e.message);
+  }
+  btn.disabled=false;input.focus();
+}
+
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}
+});
+</script>
+</body>
+</html>

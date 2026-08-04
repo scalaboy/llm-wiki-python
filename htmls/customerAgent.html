@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>万联易达 · 企业经纪人</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+/* ========== 基础重置 & 变量 ========== */
+:root{
+  --phone-w:400px;
+  --phone-h:760px;
+  --phone-radius:40px;
+  --gap:40px;
+  --navy:#1a1a2e;
+  --gold:#c9a96e;
+  --gold-light:#f5ecd7;
+  --bg:#f5f3ee;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  overflow-x:hidden;overflow-y:auto;
+}
+
+/* ========== 左侧品牌区 ========== */
+#hero{
+  flex:1 1 auto;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  padding:0 60px;min-width:200px;max-width:480px;
+}
+#hero .logo-icon{
+  width:56px;height:56px;background:var(--navy);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:24px;font-weight:800;margin-bottom:16px;
+}
+#hero h1{
+  font-size:clamp(26px,5vw,40px);font-weight:800;color:var(--navy);
+  letter-spacing:-1px;margin-bottom:4px;line-height:1.2;
+}
+#hero h1 span{color:var(--gold)}
+#hero .sub{
+  font-size:clamp(11px,1.5vw,14px);color:#888;letter-spacing:2px;margin-bottom:20px;
+}
+#hero .desc{
+  font-size:13px;color:#666;line-height:1.8;margin-bottom:24px;
+}
+#hero .pil{display:flex;gap:10px;flex-wrap:wrap}
+#hero .pil span{
+  font-size:11px;color:#555;
+  background:#fff;border:1px solid #e0dcd5;
+  border-radius:20px;padding:5px 14px;
+}
+#hero .dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#4caf50;margin-right:5px;
+}
+
+/* ========== 手机框 ========== */
+#phone-wrap{position:relative;margin-right:var(--gap);flex-shrink:0}
+#phone{
+  width:var(--phone-w);height:var(--phone-h);
+  max-width:min(400px, calc(100vw - 310px));
+  max-height:min(760px, calc(100vh - 40px), calc(100dvh - 40px));
+  background:#fff;
+  border-radius:var(--phone-radius);
+  border:3px solid #2d2d3f;
+  box-shadow:0 20px 60px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.06);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#phone::before{
+  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:130px;height:26px;background:#2d2d3f;
+  border-radius:0 0 16px 16px;z-index:10;
+}
+
+/* ========== 状态栏 ========== */
+#topbar{
+  padding:34px 20px 6px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:#aaa;
+  border-bottom:1px solid #f0ece6;
+}
+#topbar .brand{font-weight:700;color:var(--navy);font-size:12px;display:flex;align-items:center;gap:6px}
+#topbar .brand .dot{width:6px;height:6px;background:#4caf50;border-radius:50%}
+#topbar .model{color:#aaa}
+
+/* ========== 聊天区 ========== */
+#chat{
+  flex:1;overflow-y:auto;padding:14px 18px;
+  display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;background:#fafaf8;
+  -webkit-overflow-scrolling:touch;
+}
+#chat::-webkit-scrollbar{width:4px}
+#chat::-webkit-scrollbar-track{background:transparent}
+#chat::-webkit-scrollbar-thumb{background:#e0dcd5;border-radius:3px}
+
+.msg{max-width:88%;padding:10px 14px;font-size:13px;line-height:1.7;animation:fadeUp .25s ease;word-break:break-word}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.msg.customer{
+  align-self:flex-end;
+  background:#e8f0fe;color:#1a2a3a;
+  border-radius:16px 16px 4px 16px;
+}
+.msg.broker{
+  align-self:flex-start;
+  background:#fff;color:#2d2d3f;
+  border-radius:16px 16px 16px 4px;
+  border:1px solid #ece8e0;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.msg .label{
+  font-size:10px;opacity:.5;margin-bottom:3px;letter-spacing:1px;
+  font-weight:600;
+}
+.msg.customer .label{color:#4a90d9}
+.msg.broker .label{color:var(--gold)}
+
+/* broker 消息 markdown */
+.msg.broker h1,.msg.broker h2,.msg.broker h3,.msg.broker h4{font-size:14px;font-weight:700;margin:6px 0 3px;color:var(--navy)}
+.msg.broker strong{color:var(--navy);font-weight:600}
+.msg.broker em{color:#888}
+.msg.broker table{width:100%;border-collapse:collapse;font-size:11px;margin:6px 0}
+.msg.broker td,.msg.broker th{border:1px solid #e8e4dc;padding:4px 8px;text-align:left}
+.msg.broker th{background:#f5f3ee;font-weight:600}
+.msg.broker ul,.msg.broker ol{padding-left:16px;margin:4px 0}
+.msg.broker li{margin:2px 0}
+.msg.broker code{background:#f5f3ee;padding:1px 4px;border-radius:3px;font-size:11px}
+.msg.broker hr{border:none;border-top:1px solid #e8e4dc;margin:8px 0}
+.msg.broker blockquote{
+  border-left:3px solid var(--gold);
+  padding-left:10px;margin:6px 0;
+  color:#888;font-size:12px;
+}
+
+/* 来源标注 */
+.msg.broker .sources{
+  margin-top:8px;padding-top:6px;
+  border-top:1px solid #eee;
+  font-size:10px;color:#aaa;
+}
+
+/* 加载中 */
+.msg.loading{
+  align-self:flex-start;opacity:.6;
+  font-size:12px;color:#aaa;font-style:italic;
+  padding:8px 14px;
+}
+
+/* ========== 快捷提问 ========== */
+#quick-qs{
+  padding:6px 14px;display:flex;gap:6px;flex-wrap:wrap;
+  border-top:1px solid #f0ece6;background:#fff;
+}
+#quick-qs button{
+  font-size:11px;padding:4px 10px;
+  border:1px solid #e0dcd5;border-radius:14px;
+  background:#fff;color:#666;cursor:pointer;
+  white-space:nowrap;transition:all .2s;
+  font-family:inherit;
+}
+#quick-qs button:hover{border-color:var(--gold);color:var(--navy);background:var(--gold-light)}
+
+/* ========== 输入区 ========== */
+#input-area{
+  padding:8px 14px 16px;display:flex;gap:8px;
+  border-top:1px solid #f0ece6;background:#fff;
+}
+#input-area textarea{
+  flex:1;height:44px;max-height:90px;
+  background:#f5f3ee;border:1px solid #e0dcd5;
+  border-radius:22px;color:#2d2d3f;font-size:13px;
+  padding:11px 18px;resize:none;outline:none;
+  font-family:inherit;transition:border .3s;
+}
+#input-area textarea:focus{border-color:var(--gold)}
+#input-area button{
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:var(--navy);color:#fff;font-size:18px;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+}
+#input-area button:hover{background:var(--gold);transform:scale(1.05)}
+#input-area button:disabled{opacity:.3;cursor:not-allowed;transform:none}
+#input-area button::before{content:"↑"}
+
+/* ================================================
+   响应式断点 (沿用 bargin.html 格局)
+   ================================================ */
+@media (max-width:1100px){
+  :root{--gap:20px}
+  #hero{padding:0 30px}
+  #phone{--phone-w:360px;--phone-h:680px}
+}
+@media (max-width:850px){
+  body{flex-direction:column;justify-content:flex-start;padding:20px 0 0}
+  #hero{
+    flex:0 0 auto;align-items:center;text-align:center;
+    padding:0 20px 16px;max-width:100%;min-width:0;
+  }
+  #hero .pil{justify-content:center}
+  #hero .desc{text-align:center}
+  #phone-wrap{margin-right:0;margin-bottom:20px}
+  #phone{
+    --phone-w:min(400px, calc(100vw - 24px));
+    --phone-h:min(700px, calc(100vh - 170px), calc(100dvh - 170px));
+    border-radius:24px;
+  }
+  #phone::before{display:none}
+  #topbar{padding-top:16px}
+}
+@media (max-width:500px){
+  body{padding:0;background:#fff}
+  #hero{display:none}
+  #phone-wrap{margin:0}
+  #phone{
+    --phone-w:100vw;
+    --phone-h:100vh;--phone-h:100dvh;
+    border-radius:0;border:none;box-shadow:none;
+    max-width:100vw;max-height:100vh;max-height:100dvh;
+  }
+  #topbar{padding:env(safe-area-inset-top) 16px 6px}
+  #input-area{padding-bottom:max(16px, env(safe-area-inset-bottom))}
+  #chat{padding:10px 14px}
+  #quick-qs{padding:4px 10px}
+}
+</style>
+</head>
+<body>
+
+<!-- 左侧品牌区 -->
+<div id="hero">
+  <div class="logo-icon">WL</div>
+  <h1>万联<span>·</span>易达</h1>
+  <div class="sub">企业经纪人 · 智能产品顾问</div>
+  <div class="desc">
+    您好，我是万联易达企业经纪人。<br>
+    基于企业知识库，为您提供<strong>万油通、易达宝、万贸达、AI外呼</strong>
+    等产品的专业咨询服务。请随时提问。
+  </div>
+  <div class="pil">
+    <span><span class="dot"></span>服务在线</span>
+    <span id="pil-model">deepseek-v4-flash</span>
+    <span id="pil-pages">知识库已加载</span>
+  </div>
+</div>
+
+<!-- 右侧手机框 -->
+<div id="phone-wrap">
+  <div id="phone">
+    <div id="topbar">
+      <span class="brand"><span class="dot"></span>万联易达</span>
+      <span class="model">企业经纪人</span>
+    </div>
+
+    <div id="chat">
+      <div class="msg broker">
+        <div class="label">🏢 企业经纪人</div>
+        您好，欢迎咨询万联易达。我是您的企业经纪人，请问有什么可以帮助您的？
+      </div>
+    </div>
+
+    <div id="quick-qs">
+      <button onclick="quickAsk('万油通如何帮物流企业降低燃油成本？')">万油通降本</button>
+      <button onclick="quickAsk('易达宝的核心功能有哪些？')">易达宝功能</button>
+      <button onclick="quickAsk('万贸达和易达宝有什么区别？')">产品对比</button>
+      <button onclick="quickAsk('AI外呼适用于哪些业务场景？')">AI外呼场景</button>
+    </div>
+
+    <div id="input-area">
+      <textarea id="msg" placeholder="请输入您的问题..." rows="1"></textarea>
+      <button id="send" onclick="send()"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 配置 ====================
+const API = "http://192.168.68.22:12345/chat/stream";
+const chat = document.getElementById("chat");
+const input = document.getElementById("msg");
+const btn = document.getElementById("send");
+
+// ==================== 工具函数 ====================
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function appendMsg(role, text, isHtml) {
+  const cls = role === "customer" ? "customer" : "broker";
+  const label = role === "customer" ? "👤 我" : "🏢 企业经纪人";
+  const div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.innerHTML = `<div class="label">${label}</div>${isHtml ? text : escapeHtml(text)}`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function showLoading() {
+  const div = document.createElement("div");
+  div.className = "msg loading";
+  div.id = "loading-msg";
+  div.innerHTML = "企业经纪人思考中<span class='dots'></span>";
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  const dots = div.querySelector(".dots");
+  let n = 0;
+  div._timer = setInterval(() => { n = (n + 1) % 4; dots.textContent = ".".repeat(n); }, 400);
+  return div;
+}
+
+function hideLoading(div) {
+  clearInterval(div._timer);
+  div.remove();
+}
+
+// ==================== 核心：SSE 流式问答 ====================
+async function send() {
+  const question = input.value.trim();
+  if (!question) return;
+
+  btn.disabled = true;
+  appendMsg("customer", question);
+  input.value = "";
+
+  const loading = showLoading();
+
+  try {
+    const resp = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: question }),
+    });
+
+    if (!resp.ok) {
+      hideLoading(loading);
+      appendMsg("broker", "⚠️ 服务暂时不可用（HTTP " + resp.status + "），请稍后重试。");
+      btn.disabled = false;
+      input.focus();
+      return;
+    }
+
+    hideLoading(loading);
+
+    // SSE 流式读取
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let sources = [];
+    let rawText = "";
+    const botDiv = appendMsg("broker", "", true);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === "sources") {
+            sources = data.sources;
+          } else if (data.type === "token") {
+            rawText += data.content;
+            botDiv.innerHTML =
+              `<div class="label">🏢 企业经纪人</div>` +
+              marked.parse(rawText);
+            chat.scrollTop = chat.scrollHeight;
+          } else if (data.type === "done") {
+            // 流结束
+          } else if (data.type === "error") {
+            botDiv.innerHTML =
+              `<div class="label">🏢 企业经纪人</div>` +
+              "⚠️ " + escapeHtml(data.content);
+          }
+        } catch (e) { /* 忽略解析错误 */ }
+      }
+    }
+
+    // 附加来源
+    if (sources.length > 0) {
+      const srcDiv = document.createElement("div");
+      srcDiv.className = "sources";
+      srcDiv.textContent = "📚 参考：" + sources.join(" · ");
+      botDiv.appendChild(srcDiv);
+    }
+
+    if (!rawText.trim()) {
+      botDiv.innerHTML =
+        `<div class="label">🏢 企业经纪人</div>` +
+        "（未能生成回答，请稍后重试或换个问题。）";
+    }
+  } catch (e) {
+    hideLoading(loading);
+    appendMsg("broker", "⚠️ 网络异常：" + e.message + "。请检查服务是否启动。");
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+
+function quickAsk(q) {
+  input.value = q;
+  send();
+}
+
+// ==================== 键盘事件 ====================
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+// ==================== 健康检查 ====================
+async function checkHealth() {
+  try {
+    const r = await fetch("http://192.168.68.22:12345/health");
+    const d = await r.json();
+    const dot = document.querySelector("#hero .dot");
+    if (dot) dot.style.background = d.status === "ok" ? "#4caf50" : "#e94560";
+    const pilModel = document.getElementById("pil-model");
+    if (pilModel) pilModel.textContent = d.model || "deepseek-v4-flash";
+  } catch (e) {
+    const dot = document.querySelector("#hero .dot");
+    if (dot) dot.style.background = "#e94560";
+  }
+}
+checkHealth();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

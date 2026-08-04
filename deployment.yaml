@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aira-agent-webportal
+  labels:
+    app: aira-agent-webportal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aira-agent-webportal
+  template:
+    metadata:
+      labels:
+        app: aira-agent-webportal
+    spec:
+      containers:
+      - name: aira-agent-webportal
+        image: ${image}
+        ports:
+        - containerPort: 8000
+        env:
+        - name: APP_ENV
+          value: ${APP_ENV}
+        volumeMounts:
+        - name: maindir
+          mountPath: /app/maindir
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+          requests:
+            cpu: '0.25'
+            memory: 512Mi
+      volumes:
+      - name: maindir
+        persistentVolumeClaim:
+          claimName: agent-webportal
+      imagePullSecrets:
+        - name: aiplatform-docker-repository-acr
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aira-agent-webportal
+spec:
+  selector:
+    app: aira-agent-webportal
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
