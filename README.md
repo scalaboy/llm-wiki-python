@@ -1,124 +1,127 @@
+> 🌐 [中文版](./README_zh.md)
 
-基于 **DeepSeek LLM** 的企业智能体问答服务。将企业文档（PDF / DOCX / XLSX / PPTX 等）自动转化为结构化 Wiki 知识库，提供流式对话问答、知识图谱构建与巡检能力。
+# Aira Agent WebPortal
 
----
-
-> **关于 LLM Wiki 方法论**
->
-> 本项目基于特斯拉前 AI 总监 **Andrej Karpathy** 提出的 [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 方法论构建。核心思想是：LLM 不再每次从原始文档中重新检索答案，而是持续维护一个结构化的、交叉链接的 Markdown Wiki——知识只编译一次，查询时直接基于已沉淀的知识合成回答。每次摄入新文档，LLM 都会自动更新实体页、概念页、交叉引用，让知识库随时间不断累积和精炼。
->
-> 目前这套方法论已落地在我们的核心产品中，实际效果远超传统 RAG 方案。既然好用，那就把代码开源出来。项目里也附了 [Karpathy 的原始文档](karpathy-llm-wiki.md) 供参考。
+An enterprise intelligent Q&A service powered by **DeepSeek LLM**. Automatically transforms enterprise documents (PDF / DOCX / XLSX / PPTX, etc.) into a structured Wiki knowledge base, delivering streaming conversational Q&A, knowledge graph construction, and health inspection capabilities.
 
 ---
 
-## 从这里开始
+> **About the LLM Wiki Methodology**
+>
+> This project is built on the [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) methodology proposed by former Tesla AI Director **Andrej Karpathy**. The core insight: rather than re-retrieving answers from raw documents each time, the LLM maintains a structured, cross-linked Markdown Wiki — knowledge is compiled once, and queries synthesize answers directly from the curated knowledge base. Every time a new document is ingested, the LLM automatically updates entity pages, concept pages, and cross-references, allowing the knowledge base to accumulate and refine over time.
+>
+> This methodology is now live in our core products, and its real-world results far exceed traditional RAG approaches. Since it works well, we're open-sourcing the code. The repo also includes [Karpathy's original document](karpathy-llm-wiki.md) for reference.
 
-三步跑通一个企业知识库问答系统：
+---
 
-### 1. 把文档放进 raw/
+## Getting Started
 
-将企业文档（PDF、DOCX、PPTX、Excel、Markdown 等）放入 `raw/` 目录：
+Three steps to run an enterprise knowledge base Q&A system:
+
+### 1. Drop Documents into raw/
+
+Place enterprise documents (PDF, DOCX, PPTX, Excel, Markdown, etc.) into the `raw/` directory:
 
 ```bash
-cp ~/Downloads/企业产品手册.pdf raw/
-cp ~/Downloads/报价单.xlsx raw/
+cp ~/Downloads/product-manual.pdf raw/
+cp ~/Downloads/pricing.xlsx raw/
 ```
 
-### 2. 构建 Wiki
+### 2. Build the Wiki
 
-运行 `getwiki.py`，LLM 会自动把文档拆解为结构化知识库：
+Run `getwiki.py` — the LLM will automatically decompose documents into a structured knowledge base:
 
 ```bash
-# 摄取单个文档
-python baseAtoml/getwiki.py raw/企业产品手册.pdf
+# Ingest a single document
+python baseAtoml/getwiki.py raw/product-manual.pdf
 
-# 或一次摄取 raw/ 下所有文档
+# Or ingest everything under raw/ at once
 python baseAtoml/getwiki.py raw/
 
-# 查看已摄取的文档清单
+# Check ingestion status
 python baseAtoml/getwiki.py --status
 ```
 
-执行后会在 `wiki/` 下生成 `index.md`、`overview.md`、`sources/`、`entities/`、`concepts/` 等页面。
+After execution, `wiki/` will contain `index.md`, `overview.md`, `sources/`, `entities/`, `concepts/`, and more.
 
-### 3. 启动问答服务
+### 3. Start the Q&A Service
 
 ```bash
 python baseAtoml/online.py --port 8000
 ```
 
-打开浏览器访问 `http://localhost:8000/`，即可在对话界面中基于 Wiki 知识库提问。
+Open your browser to `http://localhost:8000/` and start asking questions against the Wiki knowledge base.
 
-API 方式调用：
+API access:
 
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"question": "你们的核心产品有哪些？"}'
+  -d '{"question": "What are your core products?"}'
 ```
 
 ---
 
-> **前置条件**：需要在 `env/llm` 中配置 DeepSeek API 密钥，详见下方 [环境配置](#环境配置) 一节。
+> **Prerequisites**: You need to configure your DeepSeek API key in `env/llm`. See the [Environment Configuration](#environment-configuration) section below.
 
 ---
 
-### 完整项目化：python app.py
+### Full Deployment: python app.py
 
-上面的流程适合本地快速体验。如果需要**多企业、多用户**的完整服务，启动 `app.py` 即可。它会自动为每个企业构建 Wiki 知识库，并基于知识库提供流式问答。
+The workflow above is for quick local experimentation. For a **multi-enterprise, multi-user** production service, launch `app.py`. It automatically builds a Wiki knowledge base per enterprise and provides streaming Q&A on top of it.
 
-#### 架构说明
+#### Architecture
 
 ```
-客户端 ──→ app.py ──→ RabbitMQ ──→ addComDocFromMQ.py（后台构建 Wiki）
+Client ──→ app.py ──→ RabbitMQ ──→ addComDocFromMQ.py (background Wiki builder)
               │                           │
-              ├── MySQL（对话历史）        └── maindir/<companyId>/（企业 wiki）
+              ├── MySQL (chat history)    └── maindir/<companyId>/ (enterprise wiki)
               │
-              └── DeepSeek API（流式回答）
+              └── DeepSeek API (streaming answers)
 ```
 
-两个核心 API：
+Two core APIs:
 
-- **`/api/addCompanyDoc`** — 提交企业文档 URL → 入 MQ → 后台异步下载、转换、LLM 生成 Wiki
-- **`/api/chatbywiki`** — 用户提问 → 查 MySQL 对话历史 → 检索企业 wiki → DeepSeek 流式回答
+- **`/api/addCompanyDoc`** — Submit enterprise document URL → enqueue → async download, convert, LLM-generated Wiki
+- **`/api/chatbywiki`** — User question → query MySQL chat history → retrieve enterprise wiki → DeepSeek streaming answer
 
-#### 第一步：在 env/ 下创建配置文件
+#### Step 1: Create Config Files in env/
 
-`app.py` 依赖 **MySQL**（存储对话历史）和 **RabbitMQ**（异步文档处理）。在 `env/` 下创建对应的配置文件。
+`app.py` depends on **MySQL** (chat history) and **RabbitMQ** (async document processing). Create the corresponding config files under `env/`.
 
-目录结构：
+Directory structure:
 
 ```
 env/
-├── llm              # LLM API 密钥（getwiki.py / online.py 也需要）
-├── env_test         # 测试环境
-├── env_uat          # UAT 环境
-└── env_prod         # 生产环境（按需创建）
+├── llm              # LLM API key (also used by getwiki.py / online.py)
+├── env_test         # Test environment
+├── env_uat          # UAT environment
+└── env_prod         # Production environment (create as needed)
 ```
 
-**`env/llm`**（LLM 配置）：
+**`env/llm`** (LLM configuration):
 
 ```ini
-# DeepSeek 官方 API
+# DeepSeek official API
 deepseek_key=sk-xxxxxxxxxxxxxxxx
 deepseek_url=https://api.deepseek.com
 
-# 360 代理 API（备用）
+# 360 proxy API (fallback)
 360_key=xxxxxxxx
 360Url=https://xxxxxxxx
 ```
 
-**`env/env_test`**（以 test 环境为例）：
+**`env/env_test`** (example for test environment):
 
 ```ini
-# MySQL 数据库配置
+# MySQL database configuration
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your_password
 MYSQL_DB=agent
 
-# RabbitMQ 配置
+# RabbitMQ configuration
 MQ_HOST=127.0.0.1
 MQ_PORT=5672
 MQ_USERNAME=admin
@@ -126,234 +129,234 @@ MQ_PASSWORD=your_password
 MQ_QUEUE=addCompanyDoc_queue
 ```
 
-#### 第二步：启动服务
+#### Step 2: Start the Service
 
 ```bash
-# 设置环境变量，指定使用哪个配置
+# Set the environment variable to select a config profile
 APP_ENV=test python app.py
 ```
 
-服务启动后，通过 API 提交企业文档、进行问答。
+Once running, submit enterprise documents and start Q&A via the API.
 
-#### 第三步：启动 MQ 消费者（Wiki 构建 Worker）
+#### Step 3: Start the MQ Consumer (Wiki Builder Worker)
 
-`app.py` 只负责接收请求和入队列，真正的 Wiki 构建由消费者完成：
+`app.py` only handles request intake and queueing. The actual Wiki construction is done by the consumer:
 
 ```bash
 APP_ENV=test python utils/addComDocFromMQ.py
 ```
 
-#### 快速验证
+#### Quick Verification
 
 ```bash
-# 1. 提交一个企业文档（后台自动构建 wiki）
-curl "http://localhost:8000/api/addCompanyDoc?user=admin&companyId=c001&companyName=示例公司&docAddress=https://example.com/product.pdf"
+# 1. Submit an enterprise document (Wiki builds in the background)
+curl "http://localhost:8000/api/addCompanyDoc?user=admin&companyId=c001&companyName=ExampleCorp&docAddress=https://example.com/product.pdf"
 
-# 2. 基于 wiki 提问
-curl "http://localhost:8000/api/chatbywiki?question=你们有哪些产品&userid=u001&companyid=c001&companyname=示例公司"
+# 2. Ask a question against the wiki
+curl "http://localhost:8000/api/chatbywiki?question=What+products+do+you+have&userid=u001&companyid=c001&companyname=ExampleCorp"
 ```
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 llm-wiki-python/
-├── app.py                    # 主 FastAPI 服务（门户 API）
-├── Dockerfile                # Docker 镜像构建
+├── app.py                    # Main FastAPI service (portal API)
+├── Dockerfile                # Docker image build
 ├── deployment.yaml           # Kubernetes Deployment + Service
 │
-├── baseAtoml/                # 核心：Wiki 引擎 + LLM 调用底座
-│   ├── llmdeepseek.py        #   DeepSeek 官方 API 客户端（OpenAI 兼容）
-│   ├── llmbase.py            #   360 代理版 DeepSeek 客户端（备用）
-│   ├── online.py             #   在线问答服务（独立 FastAPI + HTML 界面）
-│   ├── getwiki.py            #   文档摄取 → Wiki 页面生成
-│   ├── getanswer.py          #   CLI 问答工具（检索+合成）
-│   ├── getgraph.py           #   知识图谱构建（vis.js 可视化）
-│   └── check.py              #   Wiki 巡检（坏链/孤儿页/语义矛盾）
+├── baseAtoml/                # Core: Wiki engine + LLM call foundation
+│   ├── llmdeepseek.py        #   DeepSeek official API client (OpenAI-compatible)
+│   ├── llmbase.py            #   360-proxy DeepSeek client (fallback)
+│   ├── online.py             #   Online Q&A service (standalone FastAPI + HTML UI)
+│   ├── getwiki.py            #   Document ingestion → Wiki page generation
+│   ├── getanswer.py          #   CLI Q&A tool (retrieve + synthesize)
+│   ├── getgraph.py           #   Knowledge graph construction (vis.js visualization)
+│   └── check.py              #   Wiki health inspection (dead links / orphans / semantic conflicts)
 │
-├── utils/                    # 工具层
-│   ├── env_config.py         #   多环境配置加载（test / uat / prod）
-│   ├── addComDocFromMQ.py    #   RabbitMQ 消费者：异步创建企业 Wiki
-│   ├── select.py             #   MySQL 查询（对话历史）
-│   ├── insertTable.py        #   MySQL 写入（文档记录/用户问题）
-│   └── createTable.py        #   数据库建表
+├── utils/                    # Utility layer
+│   ├── env_config.py         #   Multi-environment config loader (test / uat / prod)
+│   ├── addComDocFromMQ.py    #   RabbitMQ consumer: async enterprise Wiki creation
+│   ├── select.py             #   MySQL query (chat history)
+│   ├── insertTable.py        #   MySQL write (document records / user questions)
+│   └── createTable.py        #   Database table creation
 │
-├── tools/                    # 辅助脚本集
-│   ├── Basemq.py             #   RabbitMQ 基础操作
-│   ├── getCompany.py         #   企业信息获取
-│   ├── getproduct.py         #   产品信息获取
-│   ├── getxls2table.py       #   Excel → 数据库导入
-│   ├── fillAgentDesc.py      #   智能体描述填充
-│   └── ...                   #   其他数据对接工具
+├── tools/                    # Auxiliary scripts
+│   ├── Basemq.py             #   RabbitMQ base operations
+│   ├── getCompany.py         #   Enterprise info retrieval
+│   ├── getproduct.py         #   Product info retrieval
+│   ├── getxls2table.py       #   Excel → database import
+│   ├── fillAgentDesc.py      #   Agent description filler
+│   └── ...                   #   Other data integration tools
 │
-├── wiki/                     # 内置知识库（通用）
-│   ├── index.md              #   索引页
-│   ├── overview.md           #   全局概述
-│   ├── concepts/             #   概念页
-│   ├── entities/             #   实体页
-│   └── sources/              #   来源文档页
+├── wiki/                     # Built-in knowledge base (general)
+│   ├── index.md              #   Index page
+│   ├── overview.md           #   Global overview
+│   ├── concepts/             #   Concept pages
+│   ├── entities/             #   Entity pages
+│   └── sources/              #   Source document pages
 │
-├── maindir/                  # 企业专属 Wiki（K8s PVC 挂载）
-│   └── <companyId>/          #   每个企业独立目录
+├── maindir/                  # Enterprise-specific Wikis (K8s PVC mount)
+│   └── <companyId>/          #   Isolated directory per enterprise
 │       ├── index.md
 │       ├── overview.md
 │       ├── sources/
 │       ├── entities/
 │       └── concepts/
 │
-├── graph/                    # 知识图谱输出
-│   ├── graph.json            #   图谱数据
-│   └── graph.html            #   交互式可视化
+├── graph/                    # Knowledge graph output
+│   ├── graph.json            #   Graph data
+│   └── graph.html            #   Interactive visualization
 │
-├── thirdPart/                # 上游参考框架（ingest / query 等）
-├── env/                      # 环境配置文件
-├── assets/                   # 静态资源（baseAgent.json 等）
-├── htmls/                    # 前端页面
-├── raw/                      # 原始文档存放
-└── test/                     # 测试脚本
+├── thirdPart/                # Upstream reference framework (ingest / query, etc.)
+├── env/                      # Environment configuration files
+├── assets/                   # Static assets (baseAgent.json, etc.)
+├── htmls/                    # Frontend pages
+├── raw/                      # Raw document storage
+└── test/                     # Test scripts
 ```
 
 ---
 
-## 核心能力
+## Core Capabilities
 
-### 1. 企业 Wiki 自动构建
+### 1. Enterprise Wiki Auto-Construction
 
-上传企业文档，自动转化为结构化 Wiki 知识库，支持多种格式的多层解析降级策略。
+Upload enterprise documents and they are automatically transformed into a structured Wiki knowledge base, with a multi-format, multi-layer parsing fallback strategy.
 
 ```bash
-# 摄取单个文档
+# Ingest a single document
 python baseAtoml/getwiki.py raw/product-manual.pdf
 
-# 批量摄取目录
-python baseAtoml/getwiki.py raw/万联易达产品手册-初版/
+# Batch ingest a directory
+python baseAtoml/getwiki.py raw/enterprise-product-manual/
 
-# 强制重摄已变更的文档
+# Force re-ingestion of changed documents
 python baseAtoml/getwiki.py raw/ --force
 
-# 查看摄取清单
+# View ingestion manifest
 python baseAtoml/getwiki.py --status
 ```
 
-**支持的文档格式**：PDF / DOCX / XLSX / XLS / PPTX / HTML / EPUB / TXT / CSV / JSON / XML / YAML / Markdown 等。
+**Supported document formats**: PDF / DOCX / XLSX / XLS / PPTX / HTML / EPUB / TXT / CSV / JSON / XML / YAML / Markdown, and more.
 
-**转换降级链**（以 PDF 为例）：`pdftotext → PyPDF2 → markitdown`，每一层失败自动降级，确保最大兼容性。
+**Conversion fallback chain** (PDF example): `pdftotext → PyPDF2 → markitdown` — each layer falls back automatically on failure, ensuring maximum compatibility.
 
-### 2. 企业经纪人问答
+### 2. Enterprise Broker Q&A
 
-基于企业专属 Wiki 的流式对话服务，自动检索相关页面并合成回答。
+Streaming conversational service based on enterprise-specific Wikis, automatically retrieving relevant pages and synthesizing answers.
 
 ```bash
-# 启动独立问答服务
+# Start the standalone Q&A service
 python baseAtoml/online.py --port 8000
 
-# 访问内置对话界面
+# Open the built-in chat interface
 open http://localhost:8000/
 ```
 
-API 端点：
+API endpoints:
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/chat` | POST | 非流式问答，返回完整答案 |
-| `/chat/stream` | POST | SSE 流式问答，逐 token 推送 |
-| `/health` | GET | 健康检查 |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | Non-streaming Q&A, returns full answer |
+| `/chat/stream` | POST | SSE streaming Q&A, pushes token by token |
+| `/health` | GET | Health check |
 
-### 3. 知识图谱
+### 3. Knowledge Graph
 
-从 Wiki 页面自动构建知识图谱，支持交互式可视化。
+Automatically construct a knowledge graph from Wiki pages, with interactive visualization.
 
 ```bash
-# 构建图谱（含语义推断）
+# Build the graph (includes semantic inference)
 python baseAtoml/getgraph.py
 
-# 构建后自动打开浏览器
+# Build and auto-open browser
 python baseAtoml/getgraph.py --open
 
-# 附带健康报告
+# Include a health report
 python baseAtoml/getgraph.py --report --save
 ```
 
-图谱包含：
-- **确定性边**：从 `[[wikilink]]` 解析
-- **语义推断边**：LLM 分析隐含关系
-- **Louvain 社区检测**：自动发现知识聚类
+The graph includes:
+- **Deterministic edges**: Parsed from `[[wikilink]]` syntax
+- **Semantic inference edges**: LLM-analyzed implicit relationships
+- **Louvain community detection**: Automatic knowledge cluster discovery
 
-### 4. Wiki 巡检
+### 4. Wiki Health Inspection
 
-定期检查知识库健康度，识别结构和语义问题。
+Periodically check knowledge base health, identifying structural and semantic issues.
 
 ```bash
-# 完整巡检（含 LLM 语义分析）
+# Full inspection (includes LLM semantic analysis)
 python baseAtoml/check.py
 
-# 仅确定性检查（便宜、可高频运行）
+# Deterministic-only checks (cheap, can run frequently)
 python baseAtoml/check.py --no-llm
 
-# 输出 JSON 供自动化消费
+# Output JSON for automated consumption
 python baseAtoml/check.py --json
 
-# 保存巡检报告
+# Save the inspection report
 python baseAtoml/check.py --save
 ```
 
-巡检项：
-- 空页 / 桩页 / 孤儿页 / 坏链
-- 缺失实体页（被频繁引用但无独立页面）
-- hub 桩、脆弱桥、孤立社区（需 graph.json）
-- LLM 语义：矛盾、过时内容、数据缺口
+Inspection items:
+- Empty pages / stub pages / orphan pages / broken links
+- Missing entity pages (frequently referenced but no standalone page)
+- Hub stubs, fragile bridges, isolated communities (requires graph.json)
+- LLM semantic: contradictions, stale content, data gaps
 
 ---
 
-## 主服务 API（app.py）
+## Main Service API (app.py)
 
-`app.py` 是部署在 Kubernetes 上的主 FastAPI 服务，聚合了门户所需的核心接口。
+`app.py` is the primary FastAPI service deployed on Kubernetes, aggregating the core interfaces needed by the portal.
 
-### 端点一览
+### Endpoint Overview
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/testfirst` | GET | 连通性测试 |
-| `/api/addCompanyDoc` | GET | 提交企业文档 → 入 MQ → 后台异步构建 Wiki |
-| `/api/addCompanyDoc/status/{task_id}` | GET | 查询异步任务状态 |
-| `/api/getDataByWanmol` | GET | 分页查询智能体基础信息（MySQL） |
-| `/api/getDataByWanmol1` | GET | 返回 baseAgent.json（静态） |
-| `/api/chatbywiki` | GET | **企业 Wiki 流式问答**（SSE，多轮对话） |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/testfirst` | GET | Connectivity test |
+| `/api/addCompanyDoc` | GET | Submit enterprise doc → enqueue → async Wiki build |
+| `/api/addCompanyDoc/status/{task_id}` | GET | Query async task status |
+| `/api/getDataByWanmol` | GET | Paginated query of agent base info (MySQL) |
+| `/api/getDataByWanmol1` | GET | Return baseAgent.json (static) |
+| `/api/chatbywiki` | GET | **Enterprise Wiki streaming Q&A** (SSE, multi-turn) |
 
-### `/api/chatbywiki` 流程
-
-```
-用户提问 → 读取历史对话(MySQL userComQuest) → 写入当前问题
-         → 检索企业 wiki(maindir/<companyId>/) → 构建 prompt
-         → DeepSeek 流式生成 → SSE 返回 + 推送来源页
-```
-
-### `/api/addCompanyDoc` 流程
+### `/api/chatbywiki` Flow
 
 ```
-接收请求 → 入 RabbitMQ（持久化） → 后台异步：
-           ① 下载文档
-           ② 多策略格式转换
-           ③ LLM 生成 Wiki 页面（index / overview / sources / entities / concepts）
-           ④ 代码级完整性兜底（重建 index.md + 追加覆盖清单）
+User question → read chat history (MySQL userComQuest) → write current question
+              → retrieve enterprise wiki (maindir/<companyId>/) → build prompt
+              → DeepSeek streaming generation → SSE response + source page references
+```
+
+### `/api/addCompanyDoc` Flow
+
+```
+Receive request → enqueue RabbitMQ (persistent) → async background:
+           ① Download document
+           ② Multi-strategy format conversion
+           ③ LLM generates Wiki pages (index / overview / sources / entities / concepts)
+           ④ Code-level completeness guard (rebuild index.md + append coverage manifest)
 ```
 
 ---
 
-## 部署
+## Deployment
 
-### 环境配置
+### Environment Configuration
 
-通过 `APP_ENV` 环境变量选择配置：
+Select a configuration profile via the `APP_ENV` environment variable:
 
-| APP_ENV | 配置文件 |
-|---------|----------|
+| APP_ENV | Config File |
+|---------|-------------|
 | `test` | `env/env_test` |
 | `uat` | `env/env_uat` |
 | `prod` | `env/env_prod` |
 
-每个 env 文件需包含：
+Each env file must contain:
 
 ```ini
 # MySQL
@@ -371,19 +374,19 @@ MQ_PASSWORD=xxx
 MQ_QUEUE=addCompanyDoc_queue
 ```
 
-LLM 配置放在 `env/llm`：
+LLM configuration goes in `env/llm`:
 
 ```ini
-# DeepSeek 官方 API（baseAtoml/llmdeepseek.py 使用）
+# DeepSeek official API (used by baseAtoml/llmdeepseek.py)
 deepseek_key=sk-xxx
 deepseek_url=https://api.deepseek.com
 
-# 360 代理 API（baseAtoml/llmbase.py 使用）
+# 360 proxy API (used by baseAtoml/llmbase.py)
 360_key=xxx
 360Url=https://xxx
 ```
 
-### Docker 部署
+### Docker Deployment
 
 ```bash
 docker build --build-arg ENV=test -t aira-agent-webportal .
@@ -393,45 +396,66 @@ docker run -p 8000:8000 \
   aira-agent-webportal
 ```
 
-### Kubernetes 部署
+### Kubernetes Deployment
 
 ```bash
-# 替换镜像地址后 apply
+# Update image reference, then apply
 kubectl apply -f deployment.yaml
 ```
 
-`maindir/` 目录通过 PersistentVolumeClaim 挂载，确保企业 Wiki 数据持久化。
+The `maindir/` directory is mounted via PersistentVolumeClaim to ensure enterprise Wiki data persistence.
 
-### MQ 消费者（Wiki 构建 Worker）
+### MQ Consumer (Wiki Builder Worker)
 
 ```bash
-# 持续消费
+# Persistent consumption
 python utils/addComDocFromMQ.py
 
-# 只消费一条（调试用）
+# Consume a single message (debugging)
 APP_ENV=test python utils/addComDocFromMQ.py --once
 ```
 
 ---
 
-## 依赖
+## Dependencies
 
-核心依赖见 `Dockerfile`，主要包括：
+Core dependencies are listed in the `Dockerfile`. Key ones include:
 
-- **FastAPI** + **Uvicorn** — Web 框架
-- **openai** — DeepSeek API 调用（OpenAI 兼容接口）
-- **pymysql** — MySQL 连接
-- **pika** — RabbitMQ 客户端
-- **PyPDF2** / **python-docx** / **openpyxl** / **xlrd** — 文档解析
-- **markitdown** — 通用格式转换
-- **networkx** — 知识图谱社区检测
-- **langgraph-checkpoint-mysql** — LangGraph 状态持久化
+- **FastAPI** + **Uvicorn** — Web framework
+- **openai** — DeepSeek API calls (OpenAI-compatible interface)
+- **pymysql** — MySQL connector
+- **pika** — RabbitMQ client
+- **PyPDF2** / **python-docx** / **openpyxl** / **xlrd** — Document parsing
+- **markitdown** — Universal format conversion
+- **networkx** — Knowledge graph community detection
+- **langgraph-checkpoint-mysql** — LangGraph state persistence
 
-`Dockerfile` 中已配置阿里云镜像源加速安装。
+The `Dockerfile` is configured with Alibaba Cloud mirror sources for faster installation.
 
----
 <img width="1203" height="1683" alt="82438833dd466ac95b2fd4a2f74f59d5" src="https://github.com/user-attachments/assets/53511db0-c52a-4382-a167-a4601da76114" />
 
+---
 
+## Dual LLM Backends
 
+The project provides two LLM call foundations — choose as needed:
 
+| Module | API Source | Default Model | Use Case |
+|--------|-----------|---------------|----------|
+| `baseAtoml/llmdeepseek.py` | DeepSeek official | `deepseek-chat` / `deepseek-reasoner` | Q&A, Wiki generation, streaming output |
+| `baseAtoml/llmbase.py` | 360 proxy | `deepseek/deepseek-v4-pro` | Graph semantic inference, health inspection |
+
+Both share the same interface: `call_llm(prompt, ...)` and `call_llm_stream(prompt, ...)`. Switching only requires changing the import.
+
+---
+
+## Related Projects
+
+The `thirdPart/` directory contains upstream reference implementations (in the [llm-wiki](https://github.com/anthropics/llm-wiki) style framework). This project adds:
+
+- Multi-enterprise isolated Wiki directory structure (`maindir/<companyId>/`)
+- RabbitMQ async document processing pipeline
+- MySQL chat history persistence
+- Multi-strategy document parsing fallback chain
+- Kubernetes deployment support
+- Agent information management API
